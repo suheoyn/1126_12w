@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Spelling Practice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitcount+Grid+Single&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--ink:#111;--pink:#e6007e;--line:#888;--grey:#dedede;box-sizing:border-box}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#fff;color:var(--ink);font-family:'Noto Sans KR','Noto Sans',sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+body{touch-action:none}
+.scene{position:fixed;inset:0;opacity:0;transition:opacity .7s ease;background:#fff}
+.scene.on{opacity:1}
+b{font-weight:500}
+h1{position:absolute;left:0;right:0;top:9%;margin:0;text-align:center;font:400 clamp(26px,4.8vw,61px)/1 'Bitcount Grid Single',monospace}
+.dot{position:absolute;transform:translate(-50%,-50%);font-weight:500;font-size:clamp(14px,1.76vw,24px);text-align:center;line-height:1;transition:color .2s}
+.dot::after{content:"";display:block;width:5px;height:5px;margin:8px auto 0;border-radius:50%;background:currentColor}
+.dot.on{color:var(--pink)}
+.prompt{position:absolute;left:0;right:0;bottom:7%;text-align:center;font-size:clamp(10px,1.12vw,14px)}
+.big{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(18px,2.4vw,32px);font-weight:500;text-align:center;padding:0 24px}
+button.ic{position:absolute;background:none;border:0;padding:12px;cursor:pointer;color:var(--ink);font:inherit;font-size:21px;line-height:1}
+button.ic:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+#q{left:max(20px,env(safe-area-inset-left));top:max(14px,env(safe-area-inset-top))}
+#bk{left:max(20px,env(safe-area-inset-left));bottom:max(20px,env(safe-area-inset-bottom))}
+#sp{left:50%;transform:translateX(-50%);bottom:max(20px,env(safe-area-inset-bottom))}
+#sp.pk{color:var(--pink)}
+canvas{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100dvh;pointer-events:none;z-index:5}
+#cur{position:fixed;width:22px;height:22px;margin:-11px 0 0 -11px;border:2px solid var(--pink);border-radius:50%;z-index:6;pointer-events:none;display:none}
+#cur.pinch{background:var(--pink)}
+#camw{position:fixed;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));width:200px;aspect-ratio:4/3;border-radius:6px;overflow:hidden;transform:scaleX(-1);z-index:6;display:none;background:#000}#camw video,#camw canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#msg{position:fixed;left:50%;top:14px;transform:translateX(-50%);font-size:13px;z-index:7;color:#555}
+/* information */
+.info{display:grid;grid-template-columns:16.8% 1fr}
+.info aside{background:var(--grey)}
+.info main{padding:clamp(24px,4.5vw,64px) clamp(20px,4vw,60px);overflow:auto}
+.info h2{font:500 clamp(22px,2.7vw,37px)/1 'Noto Sans KR',sans-serif;letter-spacing:-.04em;margin:0 0 clamp(40px,8vh,110px)}
+.row{display:grid;grid-template-columns:minmax(80px,16%) 1fr;gap:20px;margin-bottom:clamp(30px,8vh,100px)}
+.row b{font-size:clamp(12px,1.2vw,18px)}
+.row p{margin:0;font-size:clamp(11px,1.12vw,16px);line-height:1.6;letter-spacing:-.03em}
+.how{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.how svg{display:block;margin-top:clamp(20px,6vh,70px);height:clamp(110px,22vh,230px)}
+@media(max-width:700px){.info{grid-template-columns:0 1fr}.row{grid-template-columns:1fr}.how{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.scene{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas><div id="cur"></div><div id="camw"><video id="cam" playsinline muted></video><canvas id="hc" width="640" height="480"></canvas></div><div id="msg"></div>
+<script>
+let SENT='',lv='중',si=0;
+const SETS={
+'하':[['감기가 다 나았다.','낫앗낳더'],['이제 어떡해?','재떻게헤'],['이게 웬일이니?','개왠'],['잘되면 좋겠어.','돼조좃켔갰겟여'],['제가 할게요.','재하께']],
+'중':[['얻다 대고 반말이야.','어따되데아'],['뒷좌석 벨트 꼭 매세요.','뒤자밸터메새여'],['그러면 왜 안되나요?','글어웨않돼뒈'],['나 완전 빈털터리야.','잔털이'],['요즘 어이없는 사고가 많대요.','즈음의업엄은만데']],
+'상':[['희한하게 며칠 지나면 금세 잊어요.','안개몇일새잃'],['제 역할을 톡톡히 해냈다.','재활를이넸냇'],['굳이 남의 일에 오지랖 넓게 나서지 마.','구지궂에의랍넙'],['올해는 상승률이 오르길 바라.','오래은율올기래'],['엉겁결에 창피를 당했다.','영겹걸챙햇헸']]};
+const D={
+ title:{p:'선을 이어 시작해주세요.',mode:'path',h:1,y0:32,y1:80,chars:[...'맞춤법맞추기'],opts:[{t:'맞춤법맞추기',v:'go'}]},
+ level:{p:'난이도를 골라주세요.',mode:'circle',q:1,y0:30,y1:70,chars:['상','중','하']},
+ method:{p:'무엇으로 할지 고르세요.',mode:'path',q:1,back:1,y0:24,y1:78,chars:[...'마우스카메라'],opts:[{t:'마우스',v:'mouse'},{t:'카메라',v:'camera'}]},
+ menu:{mode:'path',q:1,fixed:[['변',85,17],['나',57,20],['다',22,34],['경',48,52],['음',70,59],['가',14,61],['기',46,84]],opts:[{t:'변경',v:'swap'},{t:'나가기',v:'exit'},{t:'다음',v:'next'}]}
+};
+function scatter(n,y0,y1){
+  const W=innerWidth,H=innerHeight,P=[];let d=Math.min(90,Math.sqrt(W*H*.5/n)*.9),k=0;
+  while(P.length<n){const x=W*(.07+Math.random()*.86),y=H*(y0+Math.random()*(y1-y0))/100;
+    if(P.every(p=>Math.hypot(p[0]-x,p[1]-y)>d)){P.push([x,y]);k=0}else if(++k>200){d*=.9;k=0}}
+  return P.map(p=>[p[0]/W*100,p[1]/H*100]);
+}
+function next(){si++;if(si>=5){si=0;go('level')}else go('stage')}
+function stopCam(){camOn=usingCam=drawing=false;try{window._H.close()}catch(e){}const v=document.getElementById('cam');try{v.srcObject.getTracks().forEach(t=>t.stop())}catch(e){}v.srcObject=null;document.getElementById('camw').style.display='none';cur.style.display='none'}
+addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(cur_name==='puzzle')go('menu');else if(cur_name==='menu')back()});
+const cv=document.getElementById('cv'),cx=cv.getContext('2d'),cur=document.getElementById('cur'),msg=document.getElementById('msg');
+let cs=null,hist=[],now=null,pts=[],drawing=false,usingCam=false,level='중';
+function size(){cv.width=innerWidth*devicePixelRatio;cv.height=innerHeight*devicePixelRatio;cx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+addEventListener('resize',size);size();
+function say(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ko-KR';speechSynthesis.speak(u)}catch(e){}}
+function note(t){msg.textContent=t;setTimeout(()=>msg.textContent='',3500)}
+function btn(sc,id,html,label,fn){const b=document.createElement('button');b.id=id;b.className='ic';b.innerHTML=html;b.setAttribute('aria-label',label);b.onpointerdown=e=>e.stopPropagation();b.onclick=fn;sc.appendChild(b);return b}
+function mount(sc,name,rec=true){
+  const old=now;
+  if(old&&rec&&cur_name&&!['stage','done','menu'].includes(cur_name))hist.push(cur_name);
+  cur_name=name;now=sc;document.body.appendChild(sc);clearLine();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>sc.classList.add('on')));
+  if(old){old.classList.remove('on');old.dataset.dead=1;setTimeout(()=>old.remove(),800)}
+}
+let cur_name=null;
+function back(){if(hist.length)go(hist.pop(),false)}
+function go(name,rec=true){
+  if(name==='info'){cs=null;return mount(info(),name,rec)}
+  if(name==='stage'){mount(text(lv+' - '+(si+1)),name,rec);setTimeout(()=>cur_name==='stage'&&go('puzzle'),1700);return}
+  if(name==='done'){const s=text(SENT);btn(s,'bk','←','이전 단계',back);btn(s,'sp','🔊','문장 읽기',()=>say(SENT));mount(s,name,rec);cs=null;setTimeout(()=>say(SENT),800);setTimeout(()=>cur_name==='done'&&next(),4500);return}
+  let c=D[name];
+  if(name==='puzzle'){const [t,tr]=SETS[lv][si],a=t.replace(/[^가-힣]/g,'');SENT=t;c={mode:'path',q:1,back:1,sp:1,y0:14,y1:80,chars:[...a,...tr],opts:[{t:a,v:'ok'}]}}
+  const sc=document.createElement('div');sc.className='scene';
+  if(c.h){const h=document.createElement('h1');h.textContent='Spelling Practice';sc.appendChild(h)}
+  const it=c.fixed||scatter(c.chars.length,c.y0,c.y1).map((p,i)=>[c.chars[i],p[0],p[1]]);
+  const els=it.map(([ch,x,y])=>{const e=document.createElement('div');e.className='dot';e.textContent=ch;e.style.left=x+'%';e.style.top=y+'%';sc.appendChild(e);return e});
+  if(c.p){const p=document.createElement('div');p.className='prompt';p.textContent=c.p;sc.appendChild(p)}
+  if(c.q)btn(sc,'q','?','사용 방법',()=>go('info'));
+  if(c.back)btn(sc,'bk','←','이전 단계',back);
+  if(c.sp)btn(sc,'sp','🔊','문장 읽기',()=>say(SENT));
+  cs={name,c,els,sel:[]};mount(sc,name,rec);if(name==='puzzle')setTimeout(()=>cur_name==='puzzle'&&say(SENT),900);
+}
+function text(t){const s=document.createElement('div');s.className='scene';s.innerHTML='<div class="big"></div>';s.firstChild.textContent=t;if(!t.includes('-')){}else{btn(s,'bk','←','이전 단계',()=>{});s.lastChild.style.visibility='hidden'}cs=null;return s}
+function info(){
+  const s=document.createElement('div');s.className='scene info';
+  s.innerHTML=`<aside></aside><main><h2>information</h2>
+  <div class="row"><b>[사이트]</b><p>본 사이트는 흩어진 글자 점들을 올바른 맞춤법 순서대로 선으로 이어<br>문장을 완성하는 인터랙티브 웹사이트입니다.</p></div>
+  <div class="row"><b>[방법]</b><div class="how"><div><b>마우스</b><p style="margin-top:28px">좌클릭을 누르며 마우스로 그려주세요.<br>하나를 고를 때는 원을 그려주세요.</p>
+  <svg viewBox="0 0 80 120" fill="none" stroke="#1a1a1a" stroke-width="3"><rect x="4" y="4" width="72" height="112" rx="36"/><path d="M40 4v50"/><circle cx="22" cy="27" r="7" fill="#1a1a1a" stroke="none"/></svg></div>
+  <div><b>카메라</b><p style="margin-top:28px">엄지와 검지를 사용하여 글자를 순서대로 클릭해주세요.</p>
+  <svg viewBox="0 0 90 120" fill="none" stroke="#999" stroke-width="3" stroke-linecap="round"><circle cx="38" cy="78" r="17"/><path d="M24 62C14 48 8 44 12 38c4-5 14 4 24 14M40 58c-6-14-12-20-8-26 4-4 12 6 18 20M54 56c-2-10-4-14 0-18 5-2 8 8 10 22 2 12 2 32 0 44-2 8-18 10-26 2L18 90c-6-8-4-14 2-16"/></svg></div></div></div></main>`;
+  const b=btn(s,'bk','←','이전 단계',back);b.style.color='#111';return s;
+}
+/* ---- drawing & selection ---- */
+function clearLine(){pts=[];cx.clearRect(0,0,innerWidth,innerHeight)}
+function render(){cx.clearRect(0,0,innerWidth,innerHeight);if(pts.length<2)return;cx.strokeStyle='#888';cx.lineWidth=1.6;cx.lineJoin=cx.lineCap='round';cx.beginPath();cx.moveTo(pts[0][0],pts[0][1]);pts.forEach(p=>cx.lineTo(p[0],p[1]));cx.stroke()}
+function begin(x,y){if(!cs)return;drawing=true;pts=[[x,y]];cs.sel=[];cs.els.forEach(e=>e.classList.remove('on'));hit(x,y)}
+function hit(x,y){
+  if(cs.c.mode!=='path')return;
+  cs.els.forEach((e,i)=>{if(cs.sel.includes(i))return;const r=e.getBoundingClientRect();
+    if(Math.hypot(x-(r.left+r.width/2),y-(r.top+r.height/2))<Math.max(30,r.width*.9)){cs.sel.push(i);e.classList.add('on')}})}
+function move(x,y){if(!drawing)return;pts.push([x,y]);hit(x,y);render()}
+function end(){
+  if(!drawing)return;drawing=false;const k=cs;if(!k)return;let ok=null;
+  if(k.c.mode==='path'){const w=k.sel.map(i=>k.els[i].textContent).join(''),o=k.c.opts.find(o=>o.t===w);if(o)ok=o.v}
+  else if(pts.length>8){
+    const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+    const d=Math.hypot(pts[0][0]-pts.at(-1)[0],pts[0][1]-pts.at(-1)[1]);
+    if(d<.4*Math.max(x1-x0,y1-y0)){const i=k.els.findIndex(e=>{const r=e.getBoundingClientRect(),mx=r.left+r.width/2,my=r.top+r.height/2;return mx>x0&&mx<x1&&my>y0&&my<y1});
+      if(i>=0){k.els[i].classList.add('on');ok=k.els[i].textContent}}}
+  if(ok){setTimeout(()=>{const n=k.name;
+    if(n==='title')go('level');
+    else if(n==='level'){lv=ok;si=0;go('method')}
+    else if(n==='method'){if(ok==='camera')startCam().then(()=>go('stage'));else{if(camOn)stopCam();go('stage')}}
+    else if(n==='menu'){
+      if(ok==='swap'){if(camOn){stopCam();note('마우스로 변경했어요.');back()}else startCam().then(()=>{note(camOn?'카메라로 변경했어요.':'카메라를 연결하지 못했어요.');back()})}
+      else if(ok==='exit'){hist.pop();si=0;go('level')}
+      else{hist.pop();next()}}
+    else go('done')},650)}
+  else{ if(k.sel.length||pts.length>8){setTimeout(()=>{if(cs===k){clearLine();k.els.forEach(e=>e.classList.remove('on'));k.sel=[]}},450)} }
+}
+addEventListener('pointerdown',e=>{if(e.button===0)begin(e.clientX,e.clientY)});
+addEventListener('pointermove',e=>move(e.clientX,e.clientY));
+addEventListener('pointerup',()=>end());
+/* ---- camera: pinch thumb + index ---- */
+let camOn=false;
+function load(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.crossOrigin='anonymous';s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+async function startCam(){
+  if(camOn){usingCam=true;return}
+  try{
+    const v=document.getElementById('cam');
+    v.srcObject=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480}});await v.play();document.getElementById('camw').style.display='block';
+    await load('https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js');
+    const H=new Hands({locateFile:f=>'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/'+f});
+    window._H=H;H.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:.6,minTrackingConfidence:.6});
+    let pin=false,sm=null,ts=0,sx=0,sy=0;const hc=document.getElementById('hc'),hx=hc.getContext('2d');const CN=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+    H.onResults(r=>{
+      const l=r.multiHandLandmarks&&r.multiHandLandmarks[0];hx.clearRect(0,0,hc.width,hc.height);if(l){hx.strokeStyle='#2fd04b';hx.lineWidth=3;CN.forEach(([a,b])=>{hx.beginPath();hx.moveTo(l[a].x*hc.width,l[a].y*hc.height);hx.lineTo(l[b].x*hc.width,l[b].y*hc.height);hx.stroke()});hx.fillStyle='#e8312f';l.forEach(q=>{hx.beginPath();hx.arc(q.x*hc.width,q.y*hc.height,4,0,7);hx.fill()})}
+      if(!l){sm=null;cur.style.display='none';if(pin){pin=false;cur.classList.remove('pinch');end()}return}
+      const t=l[4],i=l[8],rx=(1-(t.x+i.x)/2)*innerWidth,ry=(t.y+i.y)/2*innerHeight;if(!sm)sm=[rx,ry];const a=Math.min(.7,Math.max(.1,Math.hypot(rx-sm[0],ry-sm[1])/160));sm[0]+=(rx-sm[0])*a;sm[1]+=(ry-sm[1])*a;const x=sm[0],y=sm[1];
+      cur.style.display='block';cur.style.left=x+'px';cur.style.top=y+'px';
+      const p=Math.hypot(t.x-i.x,t.y-i.y)<(pin?.07:.05);
+      if(p&&!pin){pin=true;ts=performance.now();sx=x;sy=y;cur.classList.add('pinch');begin(x,y)}
+      else if(p&&pin)move(x,y);
+      else if(!p&&pin){pin=false;cur.classList.remove('pinch');end();if(performance.now()-ts<600&&Math.hypot(x-sx,y-sy)<50&&cur_name==='puzzle')say(SENT)}
+    });
+    camOn=usingCam=true;
+    (async function loop(){if(camOn){try{await H.send({image:v})}catch(e){}requestAnimationFrame(loop)}})();
+  }catch(e){camOn=usingCam=false;document.getElementById('camw').style.display='none';note('카메라 연결 실패('+(e.name||'오류')+'). 마우스로 진행합니다.');console.warn(e)}
+}
+go('title',false);
+</script>
+</body>
+</html>
